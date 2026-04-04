@@ -1,0 +1,34 @@
+#!/bin/bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+cd "$PROJECT_DIR"
+
+FORCE=0
+if [ "$1" = "--force" ]; then
+    FORCE=1
+fi
+
+if [ -d .venv ] && [ $FORCE -eq 0 ]; then
+    echo "Using existing .venv. Use --force to recreate."
+    .venv/bin/pip install -e ".[dev]" --quiet
+    exit 0
+fi
+
+if [ -d .venv ]; then
+    echo "Removing existing .venv..."
+    rm -rf .venv
+fi
+
+echo "Creating virtual environment..."
+python3 -m venv .venv
+
+echo "Upgrading pip..."
+.venv/bin/pip install --upgrade pip
+
+echo "Installing dependencies..."
+.venv/bin/pip install -e ".[dev]"
+
+echo "Done. Activate with: source .venv/bin/activate"
