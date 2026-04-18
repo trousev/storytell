@@ -36,11 +36,27 @@ class SileroProvider(TTSProvider):
         sf.write(output_path, audio, self.sample_rate)
 
 
+LANGUAGE_MAP = {
+    "ru": "russian",
+    "en": "english",
+    "zh": "chinese",
+    "ja": "japanese",
+    "ko": "korean",
+    "de": "german",
+    "fr": "french",
+    "es": "spanish",
+    "it": "italian",
+    "pt": "portuguese",
+}
+
+
 class QwenProvider(TTSProvider):
     def __init__(
         self,
-        model: str = "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        model: str = "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
         ref_audio: str | None = None,
+        speaker: str = "Vivian",
+        language: str = "en",
         **_,
     ):
         from qwen_tts import Qwen3TTSModel
@@ -51,6 +67,8 @@ class QwenProvider(TTSProvider):
             dtype=torch.bfloat16,
         )
         self.ref_audio = ref_audio
+        self.speaker = speaker
+        self.language = LANGUAGE_MAP.get(language, language)
 
     def synthesize(self, text: str, output_path: str):
         if self.ref_audio:
@@ -59,7 +77,13 @@ class QwenProvider(TTSProvider):
                 ref_audio=self.ref_audio,
             )
         else:
-            raise ValueError("Qwen provider requires --ref-audio for voice cloning")
+            wavs, sr = self.model.generate_custom_voice(
+                text=text,
+                speaker=self.speaker,
+                language=self.language,
+            )
+        if isinstance(wavs, list):
+            wavs = wavs[0]
         sf.write(output_path, wavs, sr)
 
 
