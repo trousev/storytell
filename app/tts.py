@@ -71,17 +71,20 @@ class QwenProvider(TTSProvider):
         self.language = LANGUAGE_MAP.get(language, language)
 
     def synthesize(self, text: str, output_path: str):
-        if self.ref_audio:
-            wavs, sr = self.model.generate_voice_clone(
-                text=text,
-                ref_audio=self.ref_audio,
-            )
-        else:
-            wavs, sr = self.model.generate_custom_voice(
-                text=text,
-                speaker=self.speaker,
-                language=self.language,
-            )
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            if self.ref_audio:
+                wavs, sr = self.model.generate_voice_clone(
+                    text=text,
+                    ref_audio=self.ref_audio,
+                )
+            else:
+                wavs, sr = self.model.generate_custom_voice(
+                    text=text,
+                    speaker=self.speaker,
+                    language=self.language,
+                )
         if isinstance(wavs, list):
             wavs = wavs[0]
         sf.write(output_path, wavs, sr)

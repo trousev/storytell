@@ -6,4 +6,7 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 cd "$PROJECT_DIR"
 
-exec .venv/bin/python script/transcript_impl.py "$@"
+export CUDA_HOME=/usr/local/cuda
+export PATH=$CUDA_HOME/bin:$PATH
+
+exec .venv/bin/python -W ignore::UserWarning script/transcript_impl.py "$@"
