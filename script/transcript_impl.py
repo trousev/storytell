@@ -1,11 +1,7 @@
 #!/usr/bin/env .venv/bin/python
 import argparse
 import sys
-import io
-import contextlib
-
-with contextlib.redirect_stderr(io.StringIO()):
-    from app.tts import TTSEngine
+from app.tts import TTSEngine
 
 
 def main():

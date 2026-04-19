@@ -6,10 +6,6 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 cd "$PROJECT_DIR"
 
-export PYENV_VERSION=3.12.8
-export CUDA_HOME=/usr/local/cuda
-export PATH=$CUDA_HOME/bin:$PATH
-
 FORCE=0
 if [ "$1" = "--force" ]; then
     FORCE=1
@@ -26,16 +22,13 @@ if [ -d .venv ]; then
     rm -rf .venv
 fi
 
-echo "Creating virtual environment with Python $PYENV_VERSION..."
-pyenv exec python -m venv .venv
+echo "Creating virtual environment..."
+python3 -m venv .venv
 
 echo "Upgrading pip..."
 .venv/bin/pip install --upgrade pip
 
 echo "Installing dependencies..."
 .venv/bin/pip install -e ".[dev]"
-
-echo "Installing flash-attn..."
-.venv/bin/pip install flash-attn --no-build-isolation || echo "flash-attn install failed (continuing...)"
 
 echo "Done. Activate with: source .venv/bin/activate"
