@@ -6,7 +6,7 @@ SECRET_KEY = "django-insecure-change-this-in-production"
 
 DEBUG = True
 
-ALLOWED_HOSTS: list[str] = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -71,9 +71,9 @@ USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CELERY_BROKER_URL = "memory://"
+CELERY_BROKER_URL = "sqla+sqlite:///" + str(BASE_DIR / "broker.db")
 CELERY_RESULT_BACKEND = "django-db"
-CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_ALWAYS_EAGER = False
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
