@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Inference</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        form { margin-bottom: 20px; }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        textarea, select { width: 100%; padding: 8px; margin-top: 5px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; margin-top: 20px; cursor: pointer; }
+        button:disabled { background: #ccc; }
+        #status { margin-top: 20px; padding: 10px; display: none; }
+        #status.pending { display: block; background: #fff3cd; }
+        #status.success { display: block; background: #d4edda; }
+        #status.failure { display: block; background: #f8d7da; }
+        audio { width: 100%; margin-top: 10px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Text to Speech</h1>
+
+    <form id="tts-form">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" id="submit-btn">Say</button>
+    </form>
+
+    <div id="status"></div>
+    <div id="result" class="hidden">
+        <h2>Generated Audio</h2>
+        <audio id="audio-player" controls></audio>
+    </div>
+
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const form = document.getElementById('tts-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const statusDiv = document.getElementById('status');
+        const resultDiv = document.getElementById('result');
+        const audioPlayer = document.getElementById('audio-player');
+
+        const sileroVoices = {{ silero_voices|safe }};
+        const qwenVoices = {{ qwen_voices|safe }};
+
+        const providerSelect = form.querySelector('[name="provider"]');
+        const voiceSelect = form.querySelector('[name="voice"]');
+
+        providerSelect.addEventListener('change', function() {
+            const voices = this.value === 'qwen' ? qwenVoices : sileroVoices;
+            voiceSelect.innerHTML = '';
+            voices.forEach(v => {
+                const option = document.createElement('option');
+                option.value = v[0];
+                option.textContent = v[1];
+                voiceSelect.appendChild(option);
+            });
+        });
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            statusDiv.className = 'pending';
+            statusDiv.textContent = 'Processing...';
+            resultDiv.classList.add('hidden');
+
+            const formData = new FormData(form);
+            const response = await fetch('/inference/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                statusDiv.className = 'failure';
+                statusDiv.textContent = 'Error: ' + JSON.stringify(err);
+                submitBtn.disabled = false;
+                return;
+            }
+
+            const data = await response.json();
+
+            if (data.audio_url) {
+                statusDiv.className = 'success';
+                statusDiv.textContent = 'Done!';
+                audioPlayer.src = '/media/' + data.audio_url;
+                resultDiv.classList.remove('hidden');
+                submitBtn.disabled = false;
+                return;
+            }
+
+            const { job_id } = data;
+            pollStatus(job_id);
+        });
+
+        async function pollStatus(jobId) {
+            while (true) {
+                await new Promise(r => setTimeout(r, 1000));
+
+                const response = await fetch(`/inference/status/?job_id=${jobId}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    statusDiv.className = 'success';
+                    statusDiv.textContent = 'Done!';
+                    audioPlayer.src = '/media/' + data.audio_url;
+                    resultDiv.classList.remove('hidden');
+                    submitBtn.disabled = false;
+                    return;
+                } else if (data.status === 'failure') {
+                    statusDiv.className = 'failure';
+                    statusDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    submitBtn.disabled = false;
+                    return;
+                } else {
+                    statusDiv.className = 'pending';
+                    statusDiv.textContent = 'Processing... (' + data.status + ')';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

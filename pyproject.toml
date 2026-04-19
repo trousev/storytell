@@ -11,6 +11,9 @@ dependencies = [
     "soundfile>=0.12",
     "numpy>=1.24",
     "scipy>=1.10",
+    "celery>=5.4",
+    "redis>=5.0",
+    "django-celery-results>=0.3",
 ]
 
 [tool.setuptools.packages.find]
