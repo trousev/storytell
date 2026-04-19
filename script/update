@@ -12,8 +12,9 @@ if [ "$1" = "--force" ]; then
 fi
 
 if [ -d .venv ] && [ $FORCE -eq 0 ]; then
-    echo "Using existing .venv. Use --force to recreate."
-    .venv/bin/pip install -e ".[dev]" --quiet
+    echo "Syncing dependencies with uv..."
+    uv sync
+    echo "Done."
     exit 0
 fi
 
@@ -22,13 +23,10 @@ if [ -d .venv ]; then
     rm -rf .venv
 fi
 
-echo "Creating virtual environment..."
-python3 -m venv .venv
-
-echo "Upgrading pip..."
-.venv/bin/pip install --upgrade pip
+echo "Creating virtual environment with uv..."
+uv venv .venv --python python3 --seed
 
 echo "Installing dependencies..."
-.venv/bin/pip install -e ".[dev]"
+uv sync
 
 echo "Done. Activate with: source .venv/bin/activate"
