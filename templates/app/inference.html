@@ -109,34 +109,8 @@
             }
 
             const { job_id } = data;
-            pollStatus(job_id);
+            window.location.href = '/inference/' + job_id + '/';
         });
-
-        async function pollStatus(jobId) {
-            while (true) {
-                await new Promise(r => setTimeout(r, 1000));
-
-                const response = await fetch(`/inference/status/?job_id=${jobId}`);
-                const data = await response.json();
-
-                if (data.status === 'success') {
-                    statusDiv.className = 'success';
-                    statusDiv.textContent = 'Done!';
-                    audioPlayer.src = '/media/' + data.audio_url;
-                    resultDiv.classList.remove('hidden');
-                    submitBtn.disabled = false;
-                    return;
-                } else if (data.status === 'failure') {
-                    statusDiv.className = 'failure';
-                    statusDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
-                    submitBtn.disabled = false;
-                    return;
-                } else {
-                    statusDiv.className = 'pending';
-                    statusDiv.textContent = 'Processing... (' + data.status + ')';
-                }
-            }
-        }
     </script>
 </body>
 </html>

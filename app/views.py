@@ -1,10 +1,9 @@
 import uuid
+import json
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
 from django_celery_results.models import TaskResult
-
-import json
 from app.forms import TTSForm, SILERO_VOICES, QWEN_VOICES
 
 
@@ -58,7 +57,7 @@ class JobStatusView(View):
         if result.status == "SUCCESS":
             return JsonResponse({
                 "status": "success",
-                "audio_url": result.result,
+                "audio_url": json.loads(result.result) if result.result else None,
             })
         elif result.status == "FAILURE":
             return JsonResponse({
@@ -67,3 +66,18 @@ class JobStatusView(View):
             })
         else:
             return JsonResponse({"status": result.status.lower()})
+
+
+class JobMonitorView(View):
+    def get(self, request, job_id):
+        try:
+            result = TaskResult.objects.get(task_id=job_id)
+            if result.status == "SUCCESS" and result.result:
+                result.result = json.loads(result.result)
+        except TaskResult.DoesNotExist:
+            result = None
+
+        return render(request, "app/monitor.html", {
+            "job_id": job_id,
+            "result": result,
+        })

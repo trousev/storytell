@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job {{ job_id }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        #status { margin-top: 20px; padding: 10px; }
+        #status.pending { background: #fff3cd; }
+        #status.success { background: #d4edda; }
+        #status.failure { background: #f8d7da; }
+        audio { width: 100%; margin-top: 10px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Job {{ job_id }}</h1>
+    <p><a href="/inference/">New Job</a></p>
+
+    <div id="status"></div>
+    <div id="result" class="hidden">
+        <h2>Generated Audio</h2>
+        <audio id="audio-player" controls></audio>
+    </div>
+
+    <script>
+        let latestStatus = '{% if result %}{{ result.status }}{% else %}pending{% endif %}';
+        let audioUrl = '{% if result %}{{ result.result }}{% endif %}';
+
+        function updateDisplay(status, error = null) {
+            const statusDiv = document.getElementById('status');
+            const resultDiv = document.getElementById('result');
+            const audioPlayer = document.getElementById('audio-player');
+
+            if (status === 'success') {
+                statusDiv.className = 'success';
+                statusDiv.textContent = 'Done!';
+                audioPlayer.src = '/media/' + audioUrl;
+                resultDiv.classList.remove('hidden');
+            } else if (status === 'failure') {
+                statusDiv.className = 'failure';
+                statusDiv.textContent = 'Error: ' + (error || 'Unknown error');
+            } else {
+                statusDiv.className = 'pending';
+                statusDiv.textContent = 'Processing... (' + status + ')';
+            }
+        }
+
+        updateDisplay(
+            latestStatus.toLowerCase() === 'success' ? 'success' :
+            latestStatus.toLowerCase() === 'failure' ? 'failure' : 'pending',
+            audioUrl || null
+        );
+
+        if (latestStatus !== 'SUCCESS' && latestStatus !== 'FAILURE') {
+            async function pollStatus() {
+                while (true) {
+                    await new Promise(r => setTimeout(r, 1000));
+
+                    const response = await fetch(`/inference/status/?job_id={{ job_id }}`);
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        updateDisplay('success');
+                        return;
+                    } else if (data.status === 'failure') {
+                        updateDisplay('failure', data.error);
+                        return;
+                    } else {
+                        updateDisplay('pending');
+                    }
+                }
+            }
+            pollStatus();
+        }
+    </script>
+</body>
+</html>
