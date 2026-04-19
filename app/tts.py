@@ -1,3 +1,4 @@
+import os
 import torch
 import soundfile as sf
 from abc import ABC, abstractmethod
@@ -7,6 +8,14 @@ class TTSProvider(ABC):
     @abstractmethod
     def synthesize(self, text: str, output_path: str):
         pass
+
+
+def _get_silero_model_path():
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    cache_path = os.path.join(base_dir, ".cache", "silero", "v5_ru.pt")
+    if os.path.isfile(cache_path):
+        return cache_path
+    return None
 
 
 class SileroProvider(TTSProvider):
@@ -24,7 +33,14 @@ class SileroProvider(TTSProvider):
         self.sample_rate = sample_rate
         self.device = torch.device("cpu")
         torch.set_num_threads(4)
-        self.model, _ = silero_tts(language=language, speaker="v5_ru")
+
+        model_path = _get_silero_model_path()
+        if model_path:
+            from torch import package
+            imp = package.PackageImporter(model_path)
+            self.model = imp.load_pickle("tts_models", "model")
+        else:
+            self.model, _ = silero_tts(language=language, speaker="v5_ru")
         self.model.to(self.device)
 
     def synthesize(self, text: str, output_path: str):
