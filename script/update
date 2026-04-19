@@ -29,4 +29,7 @@ uv venv .venv --python python3 --seed
 echo "Installing dependencies..."
 uv sync
 
+echo "Running migrations..."
+uv run python manage.py migrate
+
 echo "Done. Activate with: source .venv/bin/activate"
