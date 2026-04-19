@@ -10,9 +10,7 @@ def synthesize_speech(self, text: str, provider: str, voice: str, language: str,
     output_path = os.path.join(settings.MEDIA_ROOT, "audio", f"{output_filename}.wav")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    kwargs = {"language": language}
-    if provider == "qwen":
-        kwargs["speaker"] = voice
+    kwargs = {"language": language, "speaker": voice}
 
     tts = TTSEngine(provider=provider, **kwargs)
     tts.synthesize(text, output_path)
