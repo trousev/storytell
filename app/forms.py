@@ -9,8 +9,8 @@ SILERO_VOICES = [
     ("aidar", "Aidar"),
     ("baya", "Baya"),
     ("kseniya", "Kseniya"),
+    ("eugene", "Eugene"),
     ("xenia", "Xenia"),
-    ("random", "Random"),
 ]
 
 QWEN_VOICES = [
